@@ -1,11 +1,12 @@
 #%% 
-import serial
+import serial  #pip install pyserial
 from IPython.display import clear_output, display
 import time 
 import pandas as pd  # only for plot of results 
 
 
 ARDUINO_PORT = '/dev/ttyUSB0'
+ARDUINO_PORT = '/dev/cu.usbserial-1110'
 # %%
 
 
@@ -31,7 +32,7 @@ class RocketStandInterface():
         self.in_launch_seq = False
 
     def test_connection(self):
-        time.sleep(2)
+        time.sleep(1)
         return self.ser.inWaiting() > 0
 
     def start_recording(self, timeout_after_launch = 10):
@@ -93,7 +94,7 @@ class RocketStandInterface():
 
             if time.time() - self.last_cd_print > 1.0:
                 clear_output(wait=False)
-                format_cd = "{:.2f}".format(- count_down_val)
+                format_cd = "{:.2f}".format(- int(count_down_val))
                 print('Countdown', format_cd)
                 self.last_cd_print = time.time()
         
@@ -108,17 +109,24 @@ class RocketStandInterface():
 
     def display_result(self):
         df = pd.DataFrame(self.thrust_data)
+        print(df)
         df = df.set_index('ts')
         pl = df['thrust_in_g'].plot()
-        pl.get_figure().savefig("plot.png")
-        df.to_csv("data{t}.csv".format(t=int(time.time())))
+        t = int(time.time())
+        df.to_csv("data{t}.csv".format(t=t))
+        pl.get_figure().savefig("plot{}.png".format(t))
         pl.get_figure().show()
     
 
 # %%
 rs = RocketStandInterface()
-rs.test_connection()
+
 # %%
+while (not rs.test_connection()):    
+    print("No connection, keep trying ")
+    
+
 rs.start_countdown()
-# %%
 rs.display_result()
+
+# %%
